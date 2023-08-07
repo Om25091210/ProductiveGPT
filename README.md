@@ -1,6 +1,10 @@
 # ProductiveGPT
 # Chatbot for Whatsapp with OpenAI Integration
 
+## WHY
+
+Introducing our revolutionary chatbot integration that transforms your WhatsApp into a personal assistant, simplifying tasks, note-taking, and information retrieval. With the convenience of a friendly conversation, you can seamlessly send tasks and reminders, receive instant answers, and effortlessly manage your daily routine. No more complex apps or browser searches – just the power of productivity at your fingertips, available anytime and anywhere. Say hello to a new era of effortless efficiency. We open Whatsapp more than any app and more regularly, so why not having a chat which can be your personal assistent and not just a mere anonymous chat or message to self chat.
+
 This project demonstrates the integration of a chatbot with Facebook Messenger's Graph API and OpenAI's GPT-3.5 language model. The chatbot can engage in conversations with users via Facebook Messenger and provide dynamic responses generated using the OpenAI API.
 
 ## Use Cases
