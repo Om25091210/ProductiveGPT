@@ -21,7 +21,7 @@ Install dependencies:
  
   ``` npm install ```
 
-m# install
+## install
 Create a .env file in the root directory and add your environment variables:
 
 ```TOKEN=Your_Facebook_Page_Access_Token```
