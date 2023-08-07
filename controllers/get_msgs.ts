@@ -5,6 +5,9 @@ require("dotenv").config();
 const token = process.env.TOKEN as string;
 const openaiApiKey = process.env.OPENAPI as string;
 
+// Maintain conversation context globally
+const conversations: { [key: string]: any[] } = {};
+
 const parse_message = async (req: Request, res: Response, next: NextFunction) => {
     try {
         let body_param: any = req.body;
@@ -18,12 +21,17 @@ const parse_message = async (req: Request, res: Response, next: NextFunction) =>
                 body_param.entry[0].changes[0].value.messages[0]
             ) {
                 let from = body_param.entry[0].changes[0].value.messages[0].from;
-
-                // Get user message from the received webhook
                 let userMessage = body_param.entry[0].changes[0].value.messages[0].text.body;
-                console.log(userMessage);
+
+                if (!conversations[from]) {
+                    conversations[from] = [];
+                }
+
+                // Add user message to the conversation history
+                conversations[from].push({ role: "user", content: userMessage });
+
                 // Call your modified sendMessage function
-                await sendMessage(from, userMessage,token ,openaiApiKey);
+                await sendMessage(from, userMessage, token, openaiApiKey);
 
                 res.sendStatus(200);
                 return;
@@ -35,18 +43,21 @@ const parse_message = async (req: Request, res: Response, next: NextFunction) =>
     }
 };
 
-async function sendMessage(to:string, text:string, token:string, openaiApiKey:string) {
+async function sendMessage(to: string, text: string, token: string, openaiApiKey: string) {
     try {
-        // Construct the messages array with the user message
+        // Get conversation history for the current user
+        const conversation = conversations[to] || [];
+        console.log(conversation);
+        // Construct the messages array with user messages and assistant responses (excluding previous assistant responses)
+        const userMessages = conversation.filter(message => message.role === 'user');
+        const assistantResponses = conversation.filter(message => message.role === 'assistant');
+        const filteredAssistantResponses = assistantResponses.slice(-1); // Get the last assistant response
+        // Construct the messages array with the conversation history and user message
         const messages = [
-            {
-                role: 'system',
-                content: 'You are an intelligent assistant.',
-            },
-            {
-                role: 'user',
-                content: text,
-            }
+            { role: 'system', content: 'You are an intelligent assistant.' },
+            ...userMessages,
+            ...filteredAssistantResponses,
+            { role: 'user', content: text },
         ];
 
         const openaiResponse = await axios.post(
@@ -65,6 +76,7 @@ async function sendMessage(to:string, text:string, token:string, openaiApiKey:st
         );
 
         const generatedResponse = openaiResponse.data.choices[0].message.content.trim();
+        
         // Now send the generated response back to the user
         const facebookResponse = await axios.post(
             `https://graph.facebook.com/v17.0/104119296099196/messages?access_token=${token}`,
@@ -84,6 +96,9 @@ async function sendMessage(to:string, text:string, token:string, openaiApiKey:st
 
         console.log('OpenAI Response:', generatedResponse);
         console.log('Facebook Response:', facebookResponse.data);
+
+        // Add assistant response to the conversation history
+        conversations[to].push({ role: "assistant", content: generatedResponse });
 
     } catch (error) {
         console.error('Error:', error);
