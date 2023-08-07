@@ -21,14 +21,16 @@ Install dependencies:
  
   ``` npm install ```
 
-m install
+m# install
 Create a .env file in the root directory and add your environment variables:
-TOKEN=Your_Facebook_Page_Access_Token
-OPENAPI=Your_OpenAI_API_Key
-SECRET_KEY=Your_OpenAI_API_Key
+
+```TOKEN=Your_Facebook_Page_Access_Token```
+```OPENAPI=Your_OpenAI_API_Key```
+```SECRET_KEY=Your_OpenAI_API_Key```
 
 Start the server:
-npm start
+
+```npm start```
 
 Set up your Facebook App and configure the WhatsApp webhook to receive messages from Facebook Messenger. Update the webhook URL in your Facebook App settings to point to your server's endpoint.
 
