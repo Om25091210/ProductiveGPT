@@ -18,7 +18,8 @@ This project demonstrates the integration of a chatbot with Facebook Messenger's
    cd chatbot-facebook-openai
 
 Install dependencies:
-npm install
+ 
+  ``` npm install ```
 
 m install
 Create a .env file in the root directory and add your environment variables:
