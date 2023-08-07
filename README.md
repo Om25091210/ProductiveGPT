@@ -54,7 +54,7 @@ Your chatbot is now ready to receive messages from WhatsApp Messenger and respon
 1. Implement better error handling and retry mechanisms for API requests.
 2. Enhance conversation context management to handle more complex interactions.
 3. To enable the chatbot with analysis feature and to present visual data.
-4. Can set-up remainders in google calendar or Scedule a meet.
+4. Can set-up remainders in google calendar or Schedule a meet.
 5. Can track your TO-DO list and progress.
 
 ## Acknowledgments
