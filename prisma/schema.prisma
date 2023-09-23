@@ -9,3 +9,22 @@ datasource db {
   provider = "mongodb"
   url      = env("DATABASE_URL")
 }
+
+model Users {
+  id    String @id @default(auto()) @map("_id") @db.ObjectId
+  phone_no      String         @unique @map("phone_no")
+  credits       String         @map("credits")
+  token         String         @map("cal_token")
+  conversations Conversation[]
+}
+
+model Conversation {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  date       DateTime @default(now())
+  phone_no   String   @unique @map("phone_no")
+  user_reply String   @map("user")
+  ai_reply   String   @map("chatBot")
+  // Define the relationship with Users
+  user       Users    @relation(fields: [user_id], references: [id])
+  user_id    String   @db.ObjectId
+}

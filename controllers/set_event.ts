@@ -14,7 +14,7 @@ const credentials = {
     client_id: process.env.CLIENT_ID as string,
     client_secret: process.env.CLIENT_SECRET as string,
     // Redirect URIs should match the one you set in the Google Cloud Console
-    redirect_uris: ['https://7d33-122-175-139-212.ngrok-free.app/auth-callback'],
+    redirect_uris: ['https://66b1-106-76-243-117.ngrok-free.app/auth-callback'],
   };
 
 
