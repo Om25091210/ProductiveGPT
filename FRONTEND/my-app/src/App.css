@@ -1,0 +1,22 @@
+
+body{
+  background-color: rgb(28, 28, 28);
+  color: #fff;
+}
+.nav{
+  display: flex;
+  flex-direction: row;
+  padding: 25px 32px;
+  justify-content: space-around;
+  font-weight: 500;
+
+ 
+}
+.nav-item{
+  padding: 17px;
+  font-size: 20px;
+ 
+}
+.btn{
+  background-color: cadetblue;
+}
