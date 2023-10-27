@@ -55,20 +55,11 @@ const parse_message = async (req: Request, res: Response, next: NextFunction) =>
                 // Add user message to the conversation history
                 conversations[from].push({ role: "human", content: userMessage });
                 //Create the user (if it doesn't exist) or retrieve an existing user using Prisma.
-                const user = await prisma.users.upsert({
-                    where: { phone_no: from },
-                    update: {},
-                    create: {
-                      phone_no: from,
-                      credits: "10",
-                      token: "",
-                    },
-                });
 
                 if (userMessage.toLowerCase().includes("set reminder")) {
                     //TODO: Check the user token to skip verification process;
                     // Call the verify_consent middleware
-                    await event_controller.verify_consent(req, res, async () => {
+                    await event_controller.verify_consent(from,req, res, async () => {
                         // Access the authUrl from the req object
                         const authUrl:string = req.authUrl as string;
                         // Call your function to send the authUrl as a WhatsApp message
@@ -99,7 +90,7 @@ const parse_message = async (req: Request, res: Response, next: NextFunction) =>
                             endTime: `${endHour}:${endMinute} ${endPeriod}`,
                             googleMeet: googleMeet
                           };
-                        await event_controller.create_event(from,token,parsedMeeting,req, res, async () => {
+                        await event_controller.create_event(parsedMeeting,req, res, async () => {
                             // Call your function to send the authUrl as a WhatsApp message
                             await send_calendar_msg(from, "Event created successfully!!", token);
                         });
@@ -111,15 +102,15 @@ const parse_message = async (req: Request, res: Response, next: NextFunction) =>
                     // Call your modified sendMessage function
                     //let response:string=await sendMessage(from, userMessage, token, openaiApiKey);
                     let response:string=await langchain_model(from, userMessage, token, openaiApiKey)
-                    const convo = await prisma.conversation.create({
-                        data: {
-                          date: new Date(), // You can set the date as needed.
-                          phone_no: from,
-                          user_reply: userMessage, // Set the user timestamp as needed.
-                          ai_reply: response,  // Set the AI timestamp as needed.
-                          user: { connect: { id: user.id } }, // Connect the conversation to the user.
-                        },
-                      });
+                    // const convo = await prisma.conversation.create({
+                    //     data: {
+                    //       date: new Date(), // You can set the date as needed.
+                    //       phone_no: from,
+                    //       user_reply: userMessage, // Set the user timestamp as needed.
+                    //       ai_reply: response,  // Set the AI timestamp as needed.
+                    //       user: { connect: { id: user.id } }, // Connect the conversation to the user.
+                    //     },
+                    //   });
                     res.sendStatus(200);
                 }
                 return;

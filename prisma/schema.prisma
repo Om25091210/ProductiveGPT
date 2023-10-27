@@ -11,11 +11,23 @@ datasource db {
 }
 
 model Users {
-  id    String @id @default(auto()) @map("_id") @db.ObjectId
+  id            String         @id @default(auto()) @map("_id") @db.ObjectId
   phone_no      String         @unique @map("phone_no")
   credits       String         @map("credits")
-  token         String         @map("cal_token")
+  token         Token?          @map("cal_token")
+  optIn         Boolean        @map("opt_in")
   conversations Conversation[]
+  isActive      Boolean        @default(true) @map("is_active")
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamp()
+  updatedAt     DateTime       @default(now()) @map("updated_at") @db.Timestamp()
+}
+
+type Token {
+  access_token  String
+  refresh_token String
+  scope         String
+  token_type    String
+  expiry_date   BigInt
 }
 
 model Conversation {
@@ -25,6 +37,9 @@ model Conversation {
   user_reply String   @map("user")
   ai_reply   String   @map("chatBot")
   // Define the relationship with Users
-  user       Users    @relation(fields: [user_id], references: [id])
   user_id    String   @db.ObjectId
+  user       Users    @relation(fields: [user_id], references: [id])
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamp()
+  updatedAt  DateTime @default(now()) @map("updated_at") @db.Timestamp()
 }

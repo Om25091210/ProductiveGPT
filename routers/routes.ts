@@ -5,7 +5,7 @@ import event_controller from '../controllers/set_event';
 
 const router: Express = express();
 
-router.get("/webhook",verify_controller);
+router.post("/verify",verify_controller);
 router.post("/webhook",msg_controller.parse_message);
 router.get("/auth-callback",event_controller.auth_call);
 //router.get("/create-event",event_controller.create_event);
