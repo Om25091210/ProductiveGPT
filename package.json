@@ -6,6 +6,7 @@
   "scripts": {
     "postinstall": "prisma generate",
     "dev": "nodemon App.ts",
+    "build": "rm -rf build/ && prettier --write source/ && tsc",
     "test": "echo \"Error: no test specified\" && exit 1",
     "prisma:update": "npm i @prisma/client@latest && npm i --save-dev prisma@latest",
     "prisma:format": "npx prisma format"
