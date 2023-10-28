@@ -24,6 +24,7 @@ let pastMessages: (HumanMessage | AIMessage)[] = [];
 
 const sendAxiosRequest = async(from: string, payload: msgData, req: Request, res: Response): Promise<AxiosResponse> => {
     let userMessage=payload.payload.text;
+    console.log(userMessage);
     // Initialize conversations when a new session starts
     if (!conversations[from]) {
         // Fetch and format past conversation data from the database
@@ -38,8 +39,9 @@ const sendAxiosRequest = async(from: string, payload: msgData, req: Request, res
             ])
           );
     }
-
+    console.log("userMessage");
     let response:string=await sendMessage(from, userMessage, openaiApiKey)
+    console.log(response);
     const dataArray = JSON.parse(response);
     const extractedData = dataArray.map((item:responseData) => {
         if(item.type.toLowerCase()==="meeting"){

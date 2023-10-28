@@ -50,11 +50,14 @@ const verify = async (req: Request, res: Response, next: NextFunction) => {
       console.log("Acknowledged receipt of sandbox-start event");
     }, 500);
   } else {
+    console.log("Inside else function");
     try {
       const phoneNumber = payload.sender.phone;
       const user = await prisma.users.findFirst({
         where: { phone_no: phoneNumber },
       });
+      console.log("user");
+      console.log(user);
       if (user!=null && !user?.optIn) {
         ask_consent(res, payload);
       } else if(user!=null){
