@@ -64,7 +64,7 @@ const verify = async (req: Request, res: Response, next: NextFunction) => {
 
         const destination=phoneNumber+"";
 
-        sendAxiosRequest(destination, payload, req, res)
+        await sendAxiosRequest(destination, payload, req, res)
           .then(() => {
             console.log("Message sent successfully");
             res.status(200).send("");
