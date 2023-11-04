@@ -37,7 +37,7 @@ const verify = async (req: Request, res: Response, next: NextFunction) => {
 
   const payload = req.body.payload;
   console.log(payload);
-
+       
   // Check if the payload type is "sandbox-start"
   if (payload && payload.type === "sandbox-start") {
     // Return an empty response with HTTP_SUCCESS (2xx) status code
