@@ -1,31 +1,30 @@
 require('dotenv').config();
+const { Configuration, OpenAIApi } = require("openai");
+const fs = require("fs");
 
-const fs = require('fs');
-const axios = require('axios');
+const configuration = new Configuration({
+  apiKey: "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",
+});
+const openai = new OpenAIApi(configuration);
 
-async function transcribe(file) {
-  const response = await axios.post(
-    'https://api.openai.com/v1/audio/transcriptions',
-    {
-      file,
-      model: 'whisper-1'
-    },
-    {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-        Authorization: `Bearer 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`
-      }
-    }
-  );
+async function createTranscription(audioFileName) {
+	const resp = await openai.createTranscription(
+	  fs.createReadStream(audioFileName),
+	  "whisper-1",
+	  "en-US"
+	);
 
-  return response.data.text;
+	return resp.data.text;
 }
 
 async function main() {
-  const file = fs.createReadStream('config/audio.mp3');
-  const transcript = await transcribe(file);
-
-  console.log(transcript);
+	try {
+		const audioFileName = 'config/audio.mp3';
+		const transcription = await createTranscription(audioFileName);
+		console.log(transcription);
+	} catch (e) {
+		console.error(e);
+	}
 }
 
 main();

@@ -1,8 +1,11 @@
 import express, { Response, Request, NextFunction } from "express";
 import msgData from "../interfaces/msgData";
+import transcribeAudioFromURL from "./transcription";
 const sdk = require("api")("@gupshup/v1.0#ezpvim9lcyhvffa");
 import axios from "axios";
 import sendAxiosRequest from "./axiosHelper";
+const sdk_read = require('api')('@gupshup/v1.0#52yl2v10lk9hvls9');
+
 
 require("dotenv").config();
 import prisma from "../db";
@@ -13,31 +16,14 @@ const mytoken: string = process.env.MYTOKEN as string;
 const apiKey: string = process.env.GPAPIKEY as string;
 const clientKey: string = process.env.APIKEY as string;
 
+// Create a list to store message IDs
+const processedMessageIds: string[] = [];
+
 const verify = async (req: Request, res: Response, next: NextFunction) => {
   console.log("Inside function");
-  // ** In order to send and recieve updates from this webhook, Whatsapp sends a parameter mode
-  //**   which is needed to subscribe for further messages. Also it sends the Challenge which needs to be returned with the 200 status code
-  //**   Once the verify token is Verified.
-  // let mode:string =req.query["hub.mode"] as string;
-  // let challenge:string =req.query["hub.challenge"] as string;
-  // let verify:string=req.query["hub.verify_token"] as string;
-  // console.log(mode === "subscribe");
-  // console.log(challenge);
-  // if (mode) {
-  //     if (mode === "subscribe" && verify === mytoken) {
-  //       console.log("success");
-  //       res.status(200).send(challenge);
-  //       return;
-  //     } else {
-  //       console.log("error");
-  //       res.status(403).send(challenge);
-  //       return;
-  //     }
-  //   }
 
   const payload = req.body.payload;
   console.log(payload);
-       
   // Check if the payload type is "sandbox-start"
   if (payload && payload.type === "sandbox-start") {
     // Return an empty response with HTTP_SUCCESS (2xx) status code
@@ -50,40 +36,64 @@ const verify = async (req: Request, res: Response, next: NextFunction) => {
       console.log("Acknowledged receipt of sandbox-start event");
     }, 500);
   } else {
-    console.log("Inside else function");
     try {
       const phoneNumber = payload.sender.phone;
+
       const user = await prisma.users.findFirst({
         where: { phone_no: phoneNumber },
       });
-      console.log("user");
-      console.log(user);
-      if (user!=null && !user?.optIn) {
+      if (user != null && !user?.optIn) {
         ask_consent(res, payload);
-      } else if(user!=null){
+      } else if (user != null) {
+        markAsSenn(payload.id);
+        const destination = phoneNumber + "";
 
-        const destination=phoneNumber+"";
-
-        await sendAxiosRequest(destination, payload, req, res)
-          .then(() => {
-            console.log("Message sent successfully");
-            res.status(200).send("");
-          })
-          .catch((error) => {
-            console.error("Error sending message:", error);
-            res.status(500).send("");
-          });
-          
-      }
-      else{
-        let init_tokenData={
-          "access_token": "",
-          "refresh_token": "",
-          "scope": "",
-          "token_type": "",
-          "expiry_date": 0
+        if (payload.type === "audio") {
+          // Fetching transcription result.
+          const audioURL = payload.payload.url;
+          transcribeAudioFromURL(audioURL)
+            .then(async (transcript) => {
+              // Check if the message ID is in the processedMessageIds list
+              if (!processedMessageIds.includes(payload.id)) {
+                processedMessageIds.push(payload.id);
+                await sendAxiosRequest(user.id,destination,transcript,req,res)
+                  .then(() => {
+                    console.log("Message sent successfully");
+                    res.status(200).send("");
+                  })
+                  .catch((error) => {
+                    console.error("Error sending message:", error);
+                    res.status(500).send("");
+                  });
+              }
+            })
+            .catch((error) => {
+              // Handle any errors
+              console.error("Error:", error);
+            });
+        } else {
+          if (!processedMessageIds.includes(payload.id)) {
+            processedMessageIds.push(payload.id);
+            await sendAxiosRequest(user.id,destination,payload.payload.text,req,res)
+              .then(() => {
+                console.log("Message sent successfully");
+                res.status(200).send("");
+              })
+              .catch((error) => {
+                console.error("Error sending message:", error);
+                res.status(500).send("");
+              });
+          }
         }
-        
+      } else {
+        let init_tokenData = {
+          access_token: "",
+          refresh_token: "",
+          scope: "",
+          token_type: "",
+          expiry_date: 0,
+        };
+
         await prisma.users.upsert({
           where: { phone_no: phoneNumber },
           update: {},
@@ -104,7 +114,6 @@ const verify = async (req: Request, res: Response, next: NextFunction) => {
 async function ask_consent(res: Response, payload: msgData) {
   // Accessing the phone number
   try {
-    console.log(payload.sender.phone);
     const phoneNumber = payload.sender.phone;
 
     sdk.markauserasoptedIn(
@@ -114,15 +123,15 @@ async function ask_consent(res: Response, payload: msgData) {
         apikey: apiKey,
       }
     );
-    
-    let init_tokenData={
-      "access_token": "",
-      "refresh_token": "",
-      "scope": "",
-      "token_type": "",
-      "expiry_date": 0
-    }
-    
+
+    let init_tokenData = {
+      access_token: "",
+      refresh_token: "",
+      scope: "",
+      token_type: "",
+      expiry_date: 0,
+    };
+
     await prisma.users.upsert({
       where: { phone_no: phoneNumber },
       update: {},
@@ -139,4 +148,15 @@ async function ask_consent(res: Response, payload: msgData) {
     console.log("Error");
   }
 }
+
+function markAsSenn(id: any) {
+  sdk_read.markMessageAsRead({
+    appId: 'c230660f-427a-46cb-b2a1-e7487e607142',
+    msgId: id,
+    apikey: 'u7maer3xezr2dsrsstbq0voosxs5g8sm'
+  })
+}
+
 export default verify;
+
+
