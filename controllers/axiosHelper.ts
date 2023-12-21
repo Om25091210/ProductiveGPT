@@ -22,6 +22,7 @@ const openaiApiKey = process.env.OPENAPI as string;
 const conversations: { [key: string]: any[] } = {};
 let pastMessages: (HumanMessage | AIMessage)[] = [];
 const deliveredMessages: { [key: string]: number } = {};
+let initial_data : string="";
 
 const sendAxiosRequest = async (
   id:string,
@@ -32,6 +33,7 @@ const sendAxiosRequest = async (
 ): Promise<AxiosResponse> => {
   
   let userMessage = input_text;
+  console.log(input_text);
   conversations[from] = [];
   // Initialize conversations when a new session starts
   if (!conversations[from] && deliveredMessages[from]) {
@@ -39,6 +41,26 @@ const sendAxiosRequest = async (
     let previous_data = await prisma.conversation.findMany({
         where: { phone_no: from }
     });
+
+    // let todo_data = await prisma.TODOs.findFirst({
+    //   where: { phone_no: from }
+    // });
+    
+    // if(todo_data!=null){
+    //   initial_data = todo_data.data;
+    // } else{
+      
+    //   await prisma.TODOs.upsert({
+    //     where: { phone_no: from },
+    //     update: {},
+    //     create: {
+    //       phone_no: from,
+    //       data: initial_data,
+    //     },
+    //   });
+    // }
+
+    // console.log(todo_data)
     conversations[from] = [];
     pastMessages = pastMessages.concat(
         ...previous_data.map(conversation1 => [
@@ -49,6 +71,7 @@ const sendAxiosRequest = async (
   }
   console.log("userMessage");
   let response: string = await sendMessage(from, userMessage, openaiApiKey);
+  console.log("The initial data is -", initial_data);
   console.log("Response : " + response);
   const dataArray = JSON.parse(response);
   if (Array.isArray(dataArray)) {
@@ -236,31 +259,44 @@ async function sendMessage(to: string, text: string, openaiApiKey: string) {
         role: "system",
         content: `Process the following statement "${text}" and return the response in the following JSON format:
 
-            - If the statement is about scheduling a meeting:
-              {
-                "answer": "Your response",
-                "title": "Title of the meeting",
-                "time": "Start time in 12-hour format, e.g., 5:00 PM",
-                "guest": "List of attendees",
-                "meetinglength": "Duration of the meeting in minutes",
-                "date": "Meeting date in the format YYYY-MM-DD",
-                "type": "Meeting"
-              }
-            
-            - If the statement is general, please provide the assistance you provide for a question(not related to scheduling a meeting):
-              {
-                "answer": "Your response",
-                "type": "General"
-              }
-            
-            - If the statement contains multiple sentences, return a list of JSON objects for each sentence.
-            
-            Please note:
-            - For the "meetinglength" field, if not provided, assume a default duration of 30 minutes. Add this duration to the start time and represent it in the same 12-hour format.
-            - For the "date" field, if not provided, assume today's date.
-            - If the statement contains multiple sentences, provide a list of JSON responses, one for each sentence.
-            
-            The response should follow this structure to provide clear and organized information based on the nature of the statement.`,
+        - If the statement is about scheduling a meeting:
+          {
+            "answer": "Your response",
+            "title": "Title of the meeting",
+            "time": "Start time in 12-hour format, e.g., 5:00 PM",
+            "guest": "List of attendees",
+            "meetinglength": "Duration of the meeting in minutes",
+            "date": "Meeting date in the format YYYY-MM-DD",
+            "type": "Meeting"
+          }
+        
+        - If the statement is anything related to TODO list, update the following todo list "${initial_data}" and for multiple task, break it down into seperate objects:
+          {
+            "task": "User's Task",
+            "type": "TODO",
+            "complete_list", "Updated TODO List"
+          }
+        
+        - If the statement is general, please provide the assistance you provide for a question(not related to scheduling a meeting):
+          {
+            "answer": "Your response",
+            "type": "General"
+          }
+        
+        - If the statement contains multiple sentences, return a list of JSON objects for each sentence.
+        
+        Please note:
+        - For the "meetinglength" field, if not provided, assume a default duration of 30 minutes. Add this duration to the start time and represent it in the same 12-hour format.
+        - For the "date" field, if not provided, assume today's date.
+        - If the statement contains multiple sentences, provide a list of JSON responses, one for each sentence.
+        
+        Regarding the addition and modification of TODO list tasks:
+         - For any statement related to a TODO list, update the existing TODO list "${initial_data}" in the response.
+          - To add a new task, append it to the existing TODO list.
+          - To modify an existing task, update the specific task in the TODO list "${initial_data}" with the provided details.
+          - Ensure to return the updated TODO list in the JSON response as "completeList".
+
+        The response should follow this structure to provide clear and organized information based on the nature of the statement.`,
       },
       ...userMessages,
       ...assistantResponses,

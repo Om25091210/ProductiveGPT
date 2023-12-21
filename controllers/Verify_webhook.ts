@@ -15,7 +15,7 @@ const token = process.env.TOKEN;
 const mytoken: string = process.env.MYTOKEN as string;
 const apiKey: string = process.env.GPAPIKEY as string;
 const clientKey: string = process.env.APIKEY as string;
-
+// bhabhi -2 : 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
 // Create a list to store message IDs
 const processedMessageIds: string[] = [];
 

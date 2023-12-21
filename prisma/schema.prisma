@@ -14,12 +14,18 @@ model Users {
   id            String         @id @default(auto()) @map("_id") @db.ObjectId
   phone_no      String         @unique @map("phone_no")
   credits       String         @map("credits")
-  token         Token?          @map("cal_token")
+  token         Token?         @map("cal_token")
   optIn         Boolean        @map("opt_in")
   conversations Conversation[]
   isActive      Boolean        @default(true) @map("is_active")
   createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamp()
   updatedAt     DateTime       @default(now()) @map("updated_at") @db.Timestamp()
+}
+
+model TODOs {
+  id       String @id @default(auto()) @map("_id") @db.ObjectId
+  phone_no String @unique @map("phone_no")
+  data     String @map("todo_s")
 }
 
 type Token {
