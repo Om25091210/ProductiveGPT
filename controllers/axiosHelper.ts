@@ -270,13 +270,6 @@ async function sendMessage(to: string, text: string, openaiApiKey: string) {
             "type": "Meeting"
           }
         
-        - If the statement is anything related to TODO list, update the following todo list "${initial_data}" and for multiple task, break it down into seperate objects:
-          {
-            "task": "User's Task",
-            "type": "TODO",
-            "complete_list", "Updated TODO List"
-          }
-        
         - If the statement is general, please provide the assistance you provide for a question(not related to scheduling a meeting):
           {
             "answer": "Your response",
@@ -290,12 +283,6 @@ async function sendMessage(to: string, text: string, openaiApiKey: string) {
         - For the "date" field, if not provided, assume today's date.
         - If the statement contains multiple sentences, provide a list of JSON responses, one for each sentence.
         
-        Regarding the addition and modification of TODO list tasks:
-         - For any statement related to a TODO list, update the existing TODO list "${initial_data}" in the response.
-          - To add a new task, append it to the existing TODO list.
-          - To modify an existing task, update the specific task in the TODO list "${initial_data}" with the provided details.
-          - Ensure to return the updated TODO list in the JSON response as "completeList".
-
         The response should follow this structure to provide clear and organized information based on the nature of the statement.`,
       },
       ...userMessages,
