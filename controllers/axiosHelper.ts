@@ -74,6 +74,8 @@ const sendAxiosRequest = async (
   console.log("The initial data is -", initial_data);
   console.log("Response : " + response);
   const dataArray = JSON.parse(response);
+  console.log("Response : " + dataArray);
+  console.log(typeof(dataArray));
   if (Array.isArray(dataArray)) {
     // It's an array, so loop through the items
     for (const item of dataArray) {
