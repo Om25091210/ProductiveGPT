@@ -17,7 +17,7 @@ const credentials = {
     client_id: "587504325771-2um6j3u4fieao3bpso064gj32po77or1.apps.googleusercontent.com",
     client_secret: "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",
     // Redirect URIs should match the one you set in the Google Cloud Console
-    redirect_uris: ['https://3b20-2409-4081-ab99-e449-3c31-1398-c251-393e.ngrok-free.app/auth-callback'],
+    redirect_uris: ['https://productive-gpt.vercel.app/auth-callback'],
   };
 
 // Now you can use this redirectUri in your OAuth URL
