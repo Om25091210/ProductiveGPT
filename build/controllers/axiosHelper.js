@@ -27,15 +27,34 @@ const openaiApiKey = process.env.OPENAPI;
 //initialize a list for storing messages.
 const conversations = {};
 let pastMessages = [];
-const sendAxiosRequest = (from, payload, req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    let userMessage = payload.payload.text;
-    console.log(userMessage);
+const deliveredMessages = {};
+let initial_data = "";
+const sendAxiosRequest = (id, from, input_text, req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    let userMessage = input_text;
+    console.log(input_text);
+    conversations[from] = [];
     // Initialize conversations when a new session starts
-    if (!conversations[from]) {
+    if (!conversations[from] && deliveredMessages[from]) {
         // Fetch and format past conversation data from the database
         let previous_data = yield db_1.default.conversation.findMany({
             where: { phone_no: from }
         });
+        // let todo_data = await prisma.TODOs.findFirst({
+        //   where: { phone_no: from }
+        // });
+        // if(todo_data!=null){
+        //   initial_data = todo_data.data;
+        // } else{
+        //   await prisma.TODOs.upsert({
+        //     where: { phone_no: from },
+        //     update: {},
+        //     create: {
+        //       phone_no: from,
+        //       data: initial_data,
+        //     },
+        //   });
+        // }
+        // console.log(todo_data)
         conversations[from] = [];
         pastMessages = pastMessages.concat(...previous_data.map(conversation1 => [
             new schema_1.HumanMessage(conversation1.user_reply),
@@ -44,28 +63,44 @@ const sendAxiosRequest = (from, payload, req, res) => __awaiter(void 0, void 0, 
     }
     console.log("userMessage");
     let response = yield sendMessage(from, userMessage, openaiApiKey);
-    console.log(response);
+    console.log("The initial data is -", initial_data);
+    console.log("Response : " + response);
     const dataArray = JSON.parse(response);
-    const extractedData = dataArray.map((item) => {
-        if (item.type.toLowerCase() === "meeting") {
-            console.log(item.type.toLowerCase());
-            validate_response(item, from, req, res);
+    console.log("Response : " + dataArray);
+    console.log(typeof (dataArray));
+    if (Array.isArray(dataArray)) {
+        // It's an array, so loop through the items
+        for (const item of dataArray) {
+            if (item.type.toLowerCase() === "meeting") {
+                console.log(item.type.toLowerCase());
+                yield validate_response(item, from, req, res);
+            }
+            else {
+                yield send_calendar_msg(from, item.answer);
+            }
+        }
+    }
+    else {
+        // It's a single object
+        if (dataArray.type.toLowerCase() === "meeting") {
+            validate_response(dataArray, from, req, res);
         }
         else {
-            send_calendar_msg(from, item.answer);
+            send_calendar_msg(from, dataArray.answer);
         }
+    }
+    console.log(conversations);
+    yield db_1.default.conversation.create({
+        data: {
+            date: new Date(),
+            phone_no: from,
+            user_reply: userMessage,
+            ai_reply: response,
+            user: { connect: { id: id } }, // Connect the conversation to the user.
+        },
     });
-    // await prisma.conversation.create({
-    //             data: {
-    //                 date: new Date(), // You can set the date as needed.
-    //                 phone_no: from,
-    //                 user_reply: userMessage, // Set the user timestamp as needed.
-    //                 ai_reply: response,  // Set the AI timestamp as needed.
-    //                 user: { connect: { id: user.id } }, // Connect the conversation to the user.
-    //             },
-    //     });
     try {
-        return extractedData;
+        return dataArray;
     }
     catch (error) {
         throw error;
@@ -76,13 +111,15 @@ function validate_response(inputString, from, req, res) {
         console.log("The input we got for validating -", inputString);
         // Define regular expressions for extracting title, time, length, and date
         let meetingData = inputString;
-        const length = meetingData.meetinglength ? meetingData.meetinglength : "30 minutes"; // Default to 30 minutes if not specified
+        const length = meetingData.meetinglength
+            ? meetingData.meetinglength
+            : "30 minutes"; // Default to 30 minutes if not specified
         //TODO: Check the user token to skip verification process;
         let user_tokenDB = yield db_1.default.users.findFirst({
-            where: { phone_no: from }
+            where: { phone_no: from },
         });
         console.log(user_tokenDB === null || user_tokenDB === void 0 ? void 0 : user_tokenDB.token);
-        if ((user_tokenDB === null || user_tokenDB === void 0 ? void 0 : user_tokenDB.token) != null && (user_tokenDB === null || user_tokenDB === void 0 ? void 0 : user_tokenDB.token.access_token) === '') {
+        if ((user_tokenDB === null || user_tokenDB === void 0 ? void 0 : user_tokenDB.token) != null && (user_tokenDB === null || user_tokenDB === void 0 ? void 0 : user_tokenDB.token.access_token) === "") {
             // Call the verify_consent middleware
             yield set_event_1.default.verify_consent(from, req, res, () => __awaiter(this, void 0, void 0, function* () {
                 // Access the authUrl from the req object
@@ -112,7 +149,7 @@ function validate_response(inputString, from, req, res) {
                     startTime: `${startHour}:${startMinute} ${startPeriod}`,
                     endTime: `${endHour}:${endMinute} ${endPeriod}`,
                     googleMeet: googleMeet,
-                    dbtoken: user_tokenDB === null || user_tokenDB === void 0 ? void 0 : user_tokenDB.token
+                    dbtoken: user_tokenDB === null || user_tokenDB === void 0 ? void 0 : user_tokenDB.token,
                 };
                 yield set_event_1.default.create_event(parsedMeeting, req, res, () => __awaiter(this, void 0, void 0, function* () {
                     // Call your function to send the authUrl as a WhatsApp message
@@ -132,7 +169,7 @@ function send_calendar_msg(to, text) {
         const axiosConfig = {
             headers: {
                 "Content-Type": "application/x-www-form-urlencoded",
-                "apikey": clientKey,
+                apikey: clientKey,
             },
         };
         const postData = {
@@ -144,6 +181,7 @@ function send_calendar_msg(to, text) {
         };
         try {
             const response = yield axios_1.default.post("https://api.gupshup.io/wa/api/v1/msg", postData, axiosConfig);
+            deliveredMessages[to] = Date.now();
             return response;
         }
         catch (error) {
@@ -153,8 +191,8 @@ function send_calendar_msg(to, text) {
 }
 function calculateEndTime(startTime, durationMinutes) {
     // Parse the start time
-    const [time, period] = startTime.split(' ');
-    const [hours, minutes] = time.split(':').map(Number);
+    const [time, period] = startTime.split(" ");
+    const [hours, minutes] = time.split(":").map(Number);
     // Convert start time to total minutes
     let totalMinutes = hours * 60 + minutes;
     // Add the duration
@@ -163,13 +201,13 @@ function calculateEndTime(startTime, durationMinutes) {
     let endHours = Math.floor(totalMinutes / 60);
     let endMinutes = totalMinutes % 60;
     // Adjust for the 12-hour clock
-    if (period === 'PM' && endHours < 12) {
+    if (period === "PM" && endHours < 12) {
         endHours += 12;
     }
     // Format the result in 12-hour time format
-    const endPeriod = endHours >= 12 ? 'PM' : 'AM';
+    const endPeriod = endHours >= 12 ? "PM" : "AM";
     endHours = endHours % 12 || 12; // Ensure 12:00 PM or AM is displayed as is
-    return `${endHours}:${endMinutes.toString().padStart(2, '0')} ${endPeriod}`;
+    return `${endHours}:${endMinutes.toString().padStart(2, "0")} ${endPeriod}`;
 }
 function sendMessage(to, text, openaiApiKey) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -184,63 +222,64 @@ function sendMessage(to, text, openaiApiKey) {
             //     return;
             // }
             // Construct the messages array with user messages and assistant responses (excluding previous assistant responses)
-            const userMessages = conversation.filter(message => message.role === 'user');
-            const assistantResponses = conversation.filter(message => message.role === 'assistant');
+            const userMessages = conversation.filter((message) => message.role === "user");
+            const assistantResponses = conversation.filter((message) => message.role === "assistant");
             const filteredAssistantResponses = assistantResponses.slice(-1); // Get the last assistant response
-            const currentDate = moment_timezone_1.default.tz('Asia/Kolkata').format('YYYY-MM-DD');
+            const currentDate = moment_timezone_1.default.tz("Asia/Kolkata").format("YYYY-MM-DD");
             // Construct the messages array with the conversation history and user message
             const messages = [
-                { role: 'system', content: `Process the following statement "${text}" and return the response in the following JSON format:
+                {
+                    role: "system",
+                    content: `Process the following statement "${text}" and return the response in the following JSON format:
 
-            - If the statement is about scheduling a meeting:
-              {
-                "answer": "Your response",
-                "title": "Title of the meeting",
-                "time": "Start time in 12-hour format, e.g., 5:00 PM",
-                "guest": "List of attendees",
-                "meetinglength": "Duration of the meeting in minutes",
-                "date": "Meeting date in the format YYYY-MM-DD",
-                "type": "Meeting"
-              }
-            
-            - If the statement is general (not related to scheduling a meeting):
-              {
-                "answer": "Your response",
-                "type": "General"
-              }
-            
-            - If the statement contains multiple sentences, return a list of JSON objects for each sentence.
-            
-            Please note:
-            - For the "meetinglength" field, if not provided, assume a default duration of 30 minutes. Add this duration to the start time and represent it in the same 12-hour format.
-            - For the "date" field, if not provided, assume today's date.
-            - If the statement contains multiple sentences, provide a list of JSON responses, one for each sentence.
-            
-            The response should follow this structure to provide clear and organized information based on the nature of the statement.`
+        - If the statement is about scheduling a meeting:
+          {
+            "answer": "Your response",
+            "title": "Title of the meeting",
+            "time": "Start time in 12-hour format, e.g., 5:00 PM",
+            "guest": "List of attendees",
+            "meetinglength": "Duration of the meeting in minutes",
+            "date": "Meeting date in the format YYYY-MM-DD",
+            "type": "Meeting"
+          }
+        
+        - If the statement is general, please provide the assistance you provide for a question(not related to scheduling a meeting):
+          {
+            "answer": "Your response",
+            "type": "General"
+          }
+        
+        - If the statement contains multiple sentences, return a list of JSON objects for each sentence.
+        
+        Please note:
+        - For the "meetinglength" field, if not provided, assume a default duration of 30 minutes. Add this duration to the start time and represent it in the same 12-hour format.
+        - For the "date" field, if not provided, assume today's date.
+        - If the statement contains multiple sentences, provide a list of JSON responses, one for each sentence.
+        
+        The response should follow this structure to provide clear and organized information based on the nature of the statement.`,
                 },
                 ...userMessages,
                 ...assistantResponses,
                 ...filteredAssistantResponses,
-                { role: 'user', content: text },
+                { role: "user", content: text },
             ];
-            const openaiResponse = yield axios_1.default.post('https://api.openai.com/v1/chat/completions', {
-                model: 'gpt-3.5-turbo',
+            const openaiResponse = yield axios_1.default.post("https://api.openai.com/v1/chat/completions", {
+                model: "gpt-3.5-turbo",
                 messages: messages,
                 temperature: 0.7,
             }, {
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${openaiApiKey}`,
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${openaiApiKey}`,
                 },
             });
             const generatedResponse = openaiResponse.data.choices[0].message.content.trim();
-            console.log('OpenAI Response:', generatedResponse);
             // Add assistant response to the conversation history
             conversations[to].push({ role: "assistant", content: generatedResponse });
             return generatedResponse;
         }
         catch (error) {
-            console.error('Error:', error);
+            console.error("Error:", error);
         }
     });
 }
@@ -254,27 +293,27 @@ function langchain_model(to, text, openaiApiKey) {
                 openAIApiKey: openaiApiKey,
             });
             console.log(pastMessages);
-            const currentDate = moment_timezone_1.default.tz('Asia/Kolkata').format('YYYY-MM-DD');
+            const currentDate = moment_timezone_1.default.tz("Asia/Kolkata").format("YYYY-MM-DD");
             console.log(currentDate);
             const memory = new memory_1.BufferMemory({
                 chatHistory: new memory_1.ChatMessageHistory(pastMessages),
             });
             const chain = new chains_1.ConversationChain({ llm: model, memory: memory });
             const res1 = yield chain.call({
-                input: `Process the following statement "${text}" and then return me the response ONLY in the following format JSON({'answer': your response, 'type': General(if the statement is general)/ Meeting(if statement is related to scheduling meeting otr anything related to meetings)}). If there are more than one sentences in the statement, return me as list of JSONs.`
+                input: `Process the following statement "${text}" and then return me the response ONLY in the following format JSON({'answer': your response, 'type': General(if the statement is general)/ Meeting(if statement is related to scheduling meeting otr anything related to meetings)}). If there are more than one sentences in the statement, return me as list of JSONs.`,
                 // input: "If your question is related to scheduling events in a calendar, please provide the details such as the title, time, length (default 30 min), and date (consider today is "+ currentDate +"). For example, you can say 'Schedule a meeting with John tomorrow at 3 PM for 1 hour.' If your question is not about scheduling events, you can ask any other question or request assistance, and I'll provide the answer.Return me the data in the following format JSON({'answer': The answer, 'type': General assistance / Meeting}). My Question"
             });
             console.log({ res1 });
             // Extract the generated response from the result
             const generatedResponse = res1.response.trim();
             console.log(generatedResponse);
-            console.log('OpenAI Response:', generatedResponse);
+            console.log("OpenAI Response:", generatedResponse);
             // Add assistant response to the conversation history
             conversations[to].push({ role: "assistant", content: generatedResponse });
             return generatedResponse;
         }
         catch (error) {
-            console.error('Error:', error);
+            console.error("Error:", error);
         }
     });
 }
