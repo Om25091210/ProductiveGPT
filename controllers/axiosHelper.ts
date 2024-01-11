@@ -318,41 +318,41 @@ async function sendMessage(to: string, text: string, openaiApiKey: string) {
   }
 }
 
-async function langchain_model(to: string, text: string, openaiApiKey: string) {
-  try {
-    const model = new OpenAI({
-      modelName: "gpt-3.5-turbo",
-      temperature: 0,
-      maxTokens: 2500,
-      openAIApiKey: openaiApiKey,
-    });
-    console.log(pastMessages);
+// async function langchain_model(to: string, text: string, openaiApiKey: string) {
+//   try {
+//     const model = new OpenAI({
+//       modelName: "gpt-3.5-turbo",
+//       temperature: 0,
+//       maxTokens: 2500,
+//       openAIApiKey: openaiApiKey,
+//     });
+//     console.log(pastMessages);
 
-    const currentDate = moment.tz("Asia/Kolkata").format("YYYY-MM-DD");
-    console.log(currentDate);
+//     const currentDate = moment.tz("Asia/Kolkata").format("YYYY-MM-DD");
+//     console.log(currentDate);
 
-    const memory = new BufferMemory({
-      chatHistory: new ChatMessageHistory(pastMessages),
-    });
-    const chain = new ConversationChain({ llm: model, memory: memory });
-    const res1 = await chain.call({
-      input: `Process the following statement "${text}" and then return me the response ONLY in the following format JSON({'answer': your response, 'type': General(if the statement is general)/ Meeting(if statement is related to scheduling meeting otr anything related to meetings)}). If there are more than one sentences in the statement, return me as list of JSONs.`,
-      // input: "If your question is related to scheduling events in a calendar, please provide the details such as the title, time, length (default 30 min), and date (consider today is "+ currentDate +"). For example, you can say 'Schedule a meeting with John tomorrow at 3 PM for 1 hour.' If your question is not about scheduling events, you can ask any other question or request assistance, and I'll provide the answer.Return me the data in the following format JSON({'answer': The answer, 'type': General assistance / Meeting}). My Question"
-    });
-    console.log({ res1 });
+//     const memory = new BufferMemory({
+//       chatHistory: new ChatMessageHistory(pastMessages),
+//     });
+//     const chain = new ConversationChain({ llm: model, memory: memory });
+//     const res1 = await chain.call({
+//       input: `Process the following statement "${text}" and then return me the response ONLY in the following format JSON({'answer': your response, 'type': General(if the statement is general)/ Meeting(if statement is related to scheduling meeting otr anything related to meetings)}). If there are more than one sentences in the statement, return me as list of JSONs.`,
+//       // input: "If your question is related to scheduling events in a calendar, please provide the details such as the title, time, length (default 30 min), and date (consider today is "+ currentDate +"). For example, you can say 'Schedule a meeting with John tomorrow at 3 PM for 1 hour.' If your question is not about scheduling events, you can ask any other question or request assistance, and I'll provide the answer.Return me the data in the following format JSON({'answer': The answer, 'type': General assistance / Meeting}). My Question"
+//     });
+//     console.log({ res1 });
 
-    // Extract the generated response from the result
-    const generatedResponse = res1.response.trim();
-    console.log(generatedResponse);
+//     // Extract the generated response from the result
+//     const generatedResponse = res1.response.trim();
+//     console.log(generatedResponse);
 
-    console.log("OpenAI Response:", generatedResponse);
+//     console.log("OpenAI Response:", generatedResponse);
 
-    // Add assistant response to the conversation history
-    conversations[to].push({ role: "assistant", content: generatedResponse });
-    return generatedResponse;
-  } catch (error) {
-    console.error("Error:", error);
-  }
-}
+//     // Add assistant response to the conversation history
+//     conversations[to].push({ role: "assistant", content: generatedResponse });
+//     return generatedResponse;
+//   } catch (error) {
+//     console.error("Error:", error);
+//   }
+// }
 
 export default sendAxiosRequest;
