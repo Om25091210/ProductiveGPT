@@ -23,7 +23,7 @@ const credentials = {
     client_id: "587504325771-5ci8erb2ihfkq37fjd23qidsfl57mnjg.apps.googleusercontent.com",
     client_secret: "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",
     // Redirect URIs should match the one you set in the Google Cloud Console
-    redirect_uris: ['https://productive-gpt.vercel.app/auth-callback'],
+    redirect_uris: ['https://999e-2409-4081-848c-f69a-85a4-7ce2-c579-771f.ngrok-free.app/auth-callback'],
 };
 // Now you can use this redirectUri in your OAuth URL
 const oAuth2Client = new googleapis_1.google.auth.OAuth2(credentials.client_id, credentials.client_secret, credentials.redirect_uris[0]);
@@ -60,6 +60,7 @@ const auth_call = (req, res, next) => __awaiter(void 0, void 0, void 0, function
     }
     try {
         const token = yield oAuth2Client.getToken(code);
+        console.log(token);
         const validToken = token.tokens;
         // Store the token in a file with a unique name
         // const filename = `token_${phoneNumber}.json`;
