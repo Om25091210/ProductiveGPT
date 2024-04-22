@@ -1,3 +1,4 @@
+
 import express, { Response, Request, NextFunction } from "express";
 import msgData from "../interfaces/msgData";
 import transcribeAudioFromURL from "./transcription";
@@ -158,5 +159,3 @@ function markAsSenn(id: any) {
 }
 
 export default verify;
-
-
