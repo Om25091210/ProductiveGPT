@@ -61,12 +61,12 @@ const parse_message = (req, res, next) => __awaiter(void 0, void 0, void 0, func
                         // Access the authUrl from the req object
                         const authUrl = req.authUrl;
                         // Call your function to send the authUrl as a WhatsApp message
-                        yield send_calendar_msg(from, authUrl, token);
+                        send_calendar_msg(from, authUrl, token);
                     }));
                     const format = `
                             Please provide the following information for the meeting in this format:\nset\n1. Title of the meeting:\n2. Meeting time (in 12-hour format, e.g., 7:30pm-8:00pm):\n3. Include Google Meet link? (yes/no).
                             `;
-                    yield send_calendar_msg(from, format, token);
+                    send_calendar_msg(from, format, token);
                 }
                 else if (userMessage.toLowerCase().includes("set")) {
                     //TODO: Take the user input on setting event;
